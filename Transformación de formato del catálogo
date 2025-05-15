@@ -1,0 +1,52 @@
+"""
+El formato del catálogo no es completamente compatible con el script de recortes (mostrado en el código que viene después de este), ya que usa la librería pandas. Este script de transformación asegura que los datos estén limpios y consistentes y sean compatibles con pandas.  
+"""
+def transformar_archivo_cat(archivo_entrada, archivo_salida):
+    # Encabezado que debe tener el nuevo catálogo
+    encabezado = "NUMBER X_IMAGE Y_IMAGE ALPHA_J2000 DELTA_J2000 CLASS_STAR ELLIPTICITY ELONGATION FLUX_AUTO MAG_AUTO MAG_ISO FLAGS SNR_WIN FLUX_RADIUS FLUX_APER FWHM_IMAGE"
+
+    # Lista para almacenar las líneas transformadas
+    lineas_transformadas = []
+
+    # Se abre y lee el archivo de entrada
+    with open(archivo_entrada, 'r') as f:
+        for linea in f:
+            # Se ignoran las líneas de comentarios (que empiezan con #)
+            if linea.startswith('#'):
+                continue
+            
+            # Se separar los valores por espacios, eliminando espacios en blanco extras
+            valores = linea.split()
+            
+            # Nos aseguramos de que la línea tiene el número correcto de columnas (16)
+            if len(valores) != 16:
+                print(f"Advertencia: Línea con número incorrecto de columnas: {linea.strip()}")
+                continue
+            
+            # Se extraen los valores en el orden del primer formato del catálogo
+            number, x_image, y_image, alpha_j2000, delta_j2000, class_star, ellipticity, elongation, \
+            flux_auto, mag_auto, mag_iso, flags, snr_win, flux_radius, flux_aper, fwhm_image = valores
+            
+            # Se quita el signo "+" de DELTA_J2000 si existe
+            delta_j2000 = delta_j2000.replace('+', '')
+            
+            # Se reorganiza en el orden del segundo formato
+            linea_nueva = f"{number} {x_image} {y_image} {alpha_j2000} {delta_j2000} {class_star} {ellipticity} {elongation} {flux_auto} {mag_auto} {mag_iso} {flags} {snr_win} {flux_radius} {flux_aper} {fwhm_image}"
+            
+            # Se añade la línea transformada a la lista
+            lineas_transformadas.append(linea_nueva)
+    
+    # Se escribe el archivo de salida
+    with open(archivo_salida, 'w') as f:
+        # Se escribe el encabezado
+        f.write(encabezado + '\n')
+        # Se escriben todas las líneas transformadas
+        for linea in lineas_transformadas:
+            f.write(linea + '\n')
+
+    print(f"Transformación completada. Archivo guardado como: {archivo_salida}")
+
+# Nombre de los archivos de entrada y salida
+archivo_entrada = 'catalogo_perseus_mag19.cat'  # Reemplaza con el nombre de tu archivo de entrada
+archivo_salida = 'catalogo_perseus_mag19_f.cat'    # Nombre del archivo de salida
+transformar_archivo_cat(archivo_entrada, archivo_salida)

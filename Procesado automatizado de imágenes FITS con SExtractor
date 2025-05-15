@@ -1,0 +1,18 @@
+"""
+Este script de Bash automatiza el procesamiento de múltiples imágenes FITS (con nombres que comienzan por "subimagen" y terminan en ".fits") utilizando el software SExtractor.
+"""
+
+#!/bin/bash
+
+# Bucle sobre todas las imágenes que siguen el patrón "subimagenX_Y.fits". Cada archivo encontrado se almacena en la variable img. 
+for img in subimagen*.fits; do
+    # Se genera el nombre del catálogo reemplazando "subimagen" por "perseus" y cambiando la extensión de .fits a .cat
+    catalogo="${img/subimagen/perseus}"
+    catalogo="${catalogo/.fits/.cat}"
+
+    # Se ejecuta SExtractor mediante el comando 'sex' con la imagen FITS ($img) como entrada.
+    echo "Procesando $img -> Generando $catalogo"
+    sex "$img" -CATALOG_NAME "$catalogo"
+done
+
+echo "Procesamiento completado."

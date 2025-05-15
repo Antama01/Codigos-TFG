@@ -1,0 +1,42 @@
+"""
+El código carga una imagen FITS usando la librería astropy.io y la divide en cuatro subimágenes. Para cada subimagen:
+  1- Extrae una región de la imagen original según coordenadas definidas (xmin, xmax, ymin, ymax).
+  2- Crea una copia del original de la imagen FITS (que contiene todos los metadatos de la imagen) y ajusta los valores de CRPIX1 y CRPIX2 (coordenadas de píxel de referencia en la imagen) para reflejar el desplazamiento de la subimagen.
+  3- Guarda cada subimagen en un nuevo archivo FITS (subimagen_1.fits, subimagen_2.fits, etc.) con su respectivo encabezado, ya que cada una de estas subimagenes volverán a subdividirse en 4 nuevas.
+"""
+
+from astropy.io import fits
+import numpy as np
+
+# Se carga la imagen FITS original
+fits_file = "Euclid-VIS-ERO-Perseus-Flattened.v9-004.fits" 
+hdu_list = fits.open(fits_file)
+datos_imagen = hdu_list[0].data
+header = hdu_list[0].header
+
+# Se obtienen las dimensiones de la imagen original a partir del header
+naxis1, naxis2 = header["NAXIS1"], header["NAXIS2"]
+
+# Se definen los recortes: (xmin, xmax, ymin, ymax) en píxeles
+subregiones = [
+    (0, naxis1//2, 0, naxis2//2),  # Esquina inferior izquierda
+    (naxis1//2, naxis1, 0, naxis2//2),  # Esquina inferior derecha
+    (0, naxis1//2, naxis2//2, naxis2),  # Esquina superior izquierda
+    (naxis1//2, naxis1, naxis2//2, naxis2)  # Esquina superior derecha
+]
+
+# Se crea y guarda cada subimagen
+for i, (xmin, xmax, ymin, ymax) in enumerate(subregiones):
+    subimagen = datos_imagen[ymin:ymax, xmin:xmax]  # Recortar la imagen
+
+    # Se crea una copia del header para la subimagen y se mantenga la información, ya que será necesaria para su posterior subdivisión
+    subheader = header.copy()
+
+    # Se ajustan los valores de CRPIX1 y CRPIX2
+    subheader["CRPIX1"] -= xmin
+    subheader["CRPIX2"] -= ymin
+
+    # Se guarda la nueva subimagen en un archivo FITS
+    fits.writeto(f"subimagen_{i+1}.fits", subimagen, subheader, overwrite=True)
+
+print("Subimágenes generadas correctamente.")

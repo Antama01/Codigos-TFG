@@ -1,0 +1,51 @@
+"""
+Este script en Python automatiza la organización de los recortes de las imágenes generadas anteriormente y sus etiquetas asociadas (generadas con el software LabelImg) 
+para preparar un conjunto de datos compatible con YOLO, un modelo de detección de objetos. 
+El objetivo es dividir las imágenes y sus etiquetas en conjuntos de entrenamiento (train) y validación (val) en una proporción 80/20, de forma aleatoria y organizándolos 
+en una estructura de directorios estándar para YOLO.
+"""
+
+import shutil
+import random
+
+# Definimos las rutas de los recortes y de las etiquetas originales
+base_dir = "C:/Users/diego/Desktop/UNIVERSIDAD/2º SEMESTRE/TFG/recortes"
+labels_dir = os.path.join(base_dir, "labels1")
+
+#Definimos las rutas destino a donde queremos dirigir las imágenes y etiquetas
+dataset_dir = "C:/Users/diego/Desktop/UNIVERSIDAD/2º SEMESTRE/TFG/YOLO_dataset"
+train_img_dir = os.path.join(dataset_dir, "images/train")
+train_lbl_dir = os.path.join(dataset_dir, "labels/train")
+val_img_dir = os.path.join(dataset_dir, "images/val")
+val_lbl_dir = os.path.join(dataset_dir, "labels/val")
+
+# Creamos las carpetas si no existen
+for folder in [train_img_dir, train_lbl_dir, val_img_dir, val_lbl_dir]:
+    os.makedirs(folder, exist_ok=True)
+
+# Obtenemos todas las imágenes, que acaban con la extensión .png
+imagenes = [f for f in os.listdir(base_dir) if f.endswith(".png")]
+
+# Mezclamos aleatoriamente las imágenes para que no haya sesgo
+random.shuffle(imagenes)  
+
+# Definimos el punto de corte (un 80% a train y un 20% a val)
+division = int(len(imagenes) * 0.8)
+train_imagenes = imagenes[:division]
+val_imagenes = imagenes[division:]
+
+# Creamos una función para mover archivos
+def mover_archivos(imagenes, img_dest, lbl_dest):
+    for img in imagenes:
+        img_path = os.path.join(base_dir, img)
+        label_path = os.path.join(labels_dir, img.replace(".png", ".txt"))
+        
+        if os.path.exists(label_path):  # Verificamos que la etiqueta existe
+            shutil.move(img_path, os.path.join(img_dest, img))
+            shutil.move(label_path, os.path.join(lbl_dest, os.path.basename(label_path)))
+
+# Movemos los archivos
+mover_archivos(train_imagenes, train_img_dir, train_lbl_dir)
+mover_archivos(val_images, val_img_dir, val_lbl_dir)
+
+print("Distribución completada: 80% en train, 20% en val.")

@@ -1,0 +1,57 @@
+"""
+Este script en Python utiliza un catálogo filtrado combinado (generado en el paso anterior) para crear recortes centrados en galaxias específicas de una imagen FITS astronómica.
+Los recortes se generan como imágenes PNG, con las galaxias ubicadas en el centro, utilizando coordenadas celestes (ascensión recta y declinación) convertidas a píxeles.
+"""
+
+import os
+import pandas as pd
+from astropy.io import fits
+from astropy.nddata import Cutout2D
+from astropy.wcs import WCS
+import matplotlib.pyplot as plt
+from astropy.visualization import simple_norm
+
+# Creamos el directorio donde se guardarán los recortes
+directorio_recortes = "recortes"
+os.makedirs(directorio_recortes, exist_ok=True)
+
+# Cargamos el catalogo filtrado
+archivo_catalogo = "catalogo_perseus_mag19.cat"
+df = pd.read_csv(archivo_catalogo, delim_whitespace=True, comment="#", header=0)
+
+# Seleccionamos la cantidad de recortes que queremos realizar
+sub_df = df.iloc[0:50] 
+
+# Cargamos la imagen FITS y obtenemos su sistema de coordenadas global (llamado WCS)
+imagen_fits = "Euclid-VIS-ERO-Perseus-Flattened.v9-004.fits"
+hdu = fits.open(imagen_fits)
+data = hdu[0].data
+
+# Extraemos WCS del header de la imagen FITS
+wcs = WCS(hdu[0].header)  
+
+# Se define el tamaño del recorte en píxeles
+tamaño = (448, 448)
+
+# Definimos el rango de brillo 
+min_cut = -10
+max_cut = 1000
+
+for idx, row in sub_df.iterrows():
+    # Convertimos las coordenadas ALPHA_J2000 y DELTA_J2000 a píxeles
+    ra, dec = row["ALPHA_J2000"], row["DELTA_J2000"]
+    x_pixel, y_pixel = wcs.world_to_pixel_values(ra, dec)
+    
+    # Extraemos el recorte centrado en la posición convertida
+    posicion = (x_pixel, y_pixel)
+    cutout = Cutout2D(data, position=posicion, size=tamaño)
+   
+   # Realizamos la normalización del brillo para su correcta visualización
+    norm = simple_norm(cutout.data, stretch='log', min_cut=min_cut, max_cut=max_cut)
+    cutout_normalizado = norm(cutout.data)
+
+    # Guardamos el recorte en un archivo PNG
+    nombre_archivo = os.path.join(directorio_recortes, f"galaxia_{idx}.png")
+    plt.imsave(nombre_archivo, cutout_normalizado, cmap="gray")
+    
+print("Extracción de recortes completada.")

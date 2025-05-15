@@ -1,0 +1,21 @@
+"""
+Este script de Bash combina múltiples catálogos filtrados (generados en pasos anteriores, con nombres como perseus*_filt.cat) en un único catálogo llamado catalogo_perseus_mag19.cat
+"""
+
+#!/bin/bash
+
+#Nombre del catálogo combinado a partir de todos los subcatálogos filtrados
+output_file="catalogo_perseus_mag19.cat"
+
+# Se obtiene la lista de archivos filtrados que coincidan con el patrón perseus*_filt.cat. El comando 'sort' ordena alfabéticamente los nombres de los archivos. Los nombres de los archivos se almacenan en 'files'
+files=($(ls perseus*_filt.cat | sort))
+
+# Se copia el encabezado solo del primer archivo
+grep '^#' "${files[0]}" > "$output_file"
+
+# Se añaden los datos de cada archivo al archivo de salida. Como el header ya se copió del primer archivo, esto evita duplicar headers de los demás archivos.
+for file in "${files[@]}"; do
+    grep -v '^#' "$file" >> "$output_file"
+done
+
+echo "Combinación completada: $output_file"

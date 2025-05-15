@@ -1,0 +1,39 @@
+"""
+Este script de Bash procesa archivos de catálogo generados previamente (con nombres que siguen el patrón perseusn*_?.cat, como perseusn4_2.cat) para filtrar sus datos según ciertos parámetros del catálogo. 
+Las columas 6, 13 y 10 corresponden respectivamente a los parámtros CLASS_STAR, SNR_WIN y MAG_AUTO, explicados en la memoria del TFG.
+El formato 4_2.cat por ejemplo corresponde a la esquina superior derecha de la subimagen 4 (que a su vez es la esquina inferior derecha de la imagen original).
++--------------------+
+| Subimagen 1 | Subimagen 2 |    
+| (Sup. Izq.) | (Sup. Der.) |
+|-------------+-------------|
+| Subimagen 3 | Subimagen 4 |
+| (Inf. Izq.) | (Inf. Der.) | 
++--------------------+
+                     |
+                     |
++--------------------+
+| Subimagen 4_1 | Subimagen 4_2 |
+| (Sup. Izq.)   | (Sup. Der.)   |
+|---------------+---------------|
+| Subimagen 4_3 | Subimagen 4_4 |
+| (Inf. Izq.)   | (Inf. Der.)   |
++--------------------+
+
+"""
+
+#!/bin/bash
+
+# Se itera sobre todos los archivos en el directorio actual que coincidan con el patrón perseusn*_?.cat.
+for cat in perseusn*_?.cat; do
+    filt_cat="${cat/.cat/_filt.cat}"
+
+    # Se extrae y se guarda el encabezado en el nuevo archivo
+    grep '^#' "$cat" > "$filt_cat"
+
+    # Se filtran los datos según criterios específicos (valores en las columnas 6, 13 y 10), y se crean nuevos catálogos con la extensión _filt.cat.
+    awk '($6 < 0.1 && $13 > 100 && $10 < 20)' "$cat" >> "$filt_cat"
+
+    echo "Filtrado completado: $cat -> $filt_cat"
+done
+
+echo "Todos los catálogos han sido filtrados correctamente."

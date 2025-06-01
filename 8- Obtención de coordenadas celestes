@@ -1,0 +1,64 @@
+"""
+Este script permite obtener las coordenadas de ascensión recta (RA) y declinación (DEC) de los recortes generados a partir de la imagen FITS en formato sexagesimal y decimal.
+De esta forma, cuando el modelo lentev5 detecta un posible candidato, introduciendo el nombre del recorte en este script se pueden recuperar las coordenadas del mismo, 
+permitiendo localizarlo en un mapa celeste.
+"""
+
+import pandas as pd
+from astropy.coordinates import SkyCoord
+import astropy.units as u
+import re
+import os
+
+# Rutas al catálogo y al directorio de imágenes
+catalogo_path = r"C:\Users\diego\Desktop\UNIVERSIDAD\1º SEMESTRE\TFG\catalogo_abell_f.cat"
+images_dir = r"C:\Users\diego\Desktop\UNIVERSIDAD\1º SEMESTRE\TFG\20000_ABELL"
+
+# Nombre del recorte del candidato
+galaxy_name = "hgalaxia_00764.png"
+
+# Verificamos que la imagen exista en el directorio
+image_path = os.path.join(images_dir, galaxy_name)
+if not os.path.exists(image_path):
+    print(f"Error: La imagen '{galaxy_name}' no se encuentra en {images_dir}.")
+    exit(1)
+
+# Extraemos el índice del nombre de la galaxia
+match = re.search(r'hgalaxia_(\d+)\.png', galaxy_name)
+if not match:
+    print(f"Error: El nombre de la galaxia '{galaxy_name}' no tiene el formato esperado (hgalaxia_X.png).")
+    exit(1)
+index = int(match.group(1))
+
+# Leemos el catálogo
+try:
+    df = pd.read_csv(catalogo_path, delim_whitespace=True, comment="#", header=0)
+except FileNotFoundError:
+    print(f"Error: El archivo {catalogo_path} no se encuentra.")
+    exit(1)
+
+# Verificamos que las columnas necesarias estén presentes
+if 'ALPHA_J2000' not in df.columns or 'DELTA_J2000' not in df.columns:
+    print("Error: El catálogo no contiene las columnas 'ALPHA_J2000' y/o 'DELTA_J2000'.")
+    exit(1)
+
+# Verificamos que el índice exista en el catálogo
+if index >= len(df):
+    print(f"Error: El índice {index} no existe en el catálogo (tamaño del catálogo: {len(df)} filas).")
+    exit(1)
+
+# Obtenemos las coordenadas de la fila correspondiente al índice
+ra_deg = df['ALPHA_J2000'].iloc[index]
+dec_deg = df['DELTA_J2000'].iloc[index]
+
+# Creamos un objeto SkyCoord para manejar las coordenadas
+coords = SkyCoord(ra=ra_deg * u.deg, dec=dec_deg * u.deg, frame='icrs')
+
+# Convertimos a formato sexagesimal
+ra_sexagesimal = coords.ra.to_string(unit=u.hourangle, sep=' ', precision=2, pad=True)
+dec_sexagesimal = coords.dec.to_string(unit=u.degree, sep=' ', precision=1, alwayssign=True, pad=True)
+
+# Imprimimos las coordenadas
+print(f"Coordenadas de {galaxy_name}:")
+print(f"RA, Dec (sexagesimal): {ra_sexagesimal} {dec_sexagesimal}")
+print(f"RA, Dec (decimal): {ra_deg:.6f} {dec_deg:.6f}")
